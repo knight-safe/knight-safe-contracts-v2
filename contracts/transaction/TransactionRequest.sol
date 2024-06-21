@@ -17,25 +17,33 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
     using EnumerableSet for EnumerableSet.UintSet;
 
     uint256 private _nonce;
-    mapping(uint256 => Transaction.Request) public transactionRequest;
 
+    mapping(uint256 => Transaction.Request) private _transactionRequest;
+
+    /// @inheritdoc ITransactionRequest
     uint256 public dailyVolumeSpent = 0;
+
+    /// @inheritdoc ITransactionRequest
     uint256 public accountVolumeSpent = 0;
     uint256 private _lastDailyVolumeDate = 0;
 
-    function getTransactionRequestNonce() public view returns (uint256) {
+    /// @inheritdoc ITransactionRequest
+    function getNextTransactionRequestId() public view returns (uint256) {
         return _nonce;
     }
 
+    /// @inheritdoc ITransactionRequest
     function getTransactionRequest(uint256 reqId) public view returns (Transaction.Request memory) {
         if (reqId >= _nonce) revert Errors.InvalidReqId(reqId);
-        return transactionRequest[reqId];
+        return _transactionRequest[reqId];
     }
 
+    /// @inheritdoc ITransactionRequest
     function getTotalVolumeSpent() public view returns (uint256) {
         return dailyVolumeSpent + accountVolumeSpent;
     }
 
+    /// @inheritdoc ITransactionRequest
     function validateTradingAccess(
         uint256 policyId,
         bool useGlobalWhitelist,
@@ -52,6 +60,9 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
 
             if (ksa != address(1)) {
                 (addresses, amounts) = IKnightSafeAnalyser(ksa).extractAddressesWithValue(to, data);
+                if (addresses.length == 0) {
+                    revert Errors.SelectorNotSupport();
+                }
                 for (uint256 i = 0; i < addresses.length; i++) {
                     if (!isPolicyOrGlobalWhitelistAddress(policyId, addresses[i])) {
                         revert Errors.AddressNotInWhitelist(policyId, addresses[i]);
@@ -61,6 +72,7 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
         }
     }
 
+    /// @inheritdoc ITransactionRequest
     function validateTradingLimit(address[] memory addresses, uint256[] memory amounts, uint256 value)
         public
         returns (uint256)
@@ -91,6 +103,7 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
         return txnVolume - volumeSpent;
     }
 
+    /// @inheritdoc ITransactionRequest
     function validatePolicyLimit(uint256 policyId, bool useGlobalWhitelist, uint256 volume) public {
         // feature disable for unsubscribed user
         if (!_controlCenter.isSpendingLimitEnabled(address(this))) return;
@@ -108,6 +121,7 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
         }
     }
 
+    /// @inheritdoc ITransactionRequest
     function requestTransaction(uint256 onBehalfOfPolicyId, address to, uint256 value, bytes memory data)
         public
         onlyTrader(onBehalfOfPolicyId)
@@ -122,11 +136,12 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
         request.params = Transaction.Params(to, value, data);
         request.status = Transaction.Status.Pending;
 
-        transactionRequest[reqId] = request;
+        _transactionRequest[reqId] = request;
 
         TransactionEventUtils.emitCreatedTransactionRequest(_controlCenter, address(this), reqId);
     }
 
+    /// @inheritdoc ITransactionRequest
     function cancelTransactionByReqId(uint256 onBehalfOfPolicyId, uint256 reqId)
         public
         onlyTrader(onBehalfOfPolicyId)
@@ -139,6 +154,7 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
         TransactionEventUtils.emitCancelledTransactionRequest(_controlCenter, address(this), reqId);
     }
 
+    /// @inheritdoc ITransactionRequest
     function rejectTransactionByReqId(uint256 onBehalfOfPolicyId, bool useGlobalWhitelist, uint256 reqId)
         public
         onlyTrader(onBehalfOfPolicyId)
@@ -151,6 +167,7 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
         TransactionEventUtils.emitRejectedTransactionRequest(_controlCenter, address(this), reqId);
     }
 
+    /// @inheritdoc ITransactionRequest
     function executeTransaction(
         uint256 onBehalfOfPolicyId,
         bool useGlobalWhitelist,
@@ -165,6 +182,7 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
         );
     }
 
+    /// @inheritdoc ITransactionRequest
     function executeTransactionByReqId(uint256 onBehalfOfPolicyId, bool useGlobalWhitelist, uint256 reqId) public {
         Transaction.Request memory request = getTransactionRequest(reqId);
         _updateTransactionRequestStatus(reqId, Transaction.Status.Completed);
@@ -177,10 +195,10 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
     }
 
     function _updateTransactionRequestStatus(uint256 reqId, Transaction.Status status) private {
-        if (transactionRequest[reqId].status != Transaction.Status.Pending || status == Transaction.Status.Pending) {
+        if (_transactionRequest[reqId].status != Transaction.Status.Pending || status == Transaction.Status.Pending) {
             revert Errors.InvalidTransactionStatus();
         }
-        transactionRequest[reqId].status = status;
+        _transactionRequest[reqId].status = status;
     }
 
     function _executeTransaction(

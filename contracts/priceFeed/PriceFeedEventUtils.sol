@@ -12,7 +12,7 @@ library PriceFeedEventUtils {
     using EventUtils for EventUtils.UintItems;
     using EventUtils for EventUtils.BoolItems;
 
-    function emitsetPriceFeed(address eventEmitter, address token, address priceFeed) external {
+    function emitSetPriceFeed(address eventEmitter, address token, address priceFeed) external {
         EventUtils.EventLogData memory eventData;
         eventData.uintItems.initItems(1);
         eventData.uintItems.setItem(0, "length", 1);
@@ -23,7 +23,7 @@ library PriceFeedEventUtils {
         IEventEmitter(eventEmitter).emitEventLog("setPriceFeed", eventData);
     }
 
-    function emitsetPriceFeed(address eventEmitter, address[] memory token, address[] memory priceFeed) external {
+    function emitSetPriceFeed(address eventEmitter, address[] memory token, address[] memory priceFeed) external {
         EventUtils.EventLogData memory eventData;
         eventData.uintItems.initItems(token.length);
         eventData.uintItems.setItem(0, "length", 1);

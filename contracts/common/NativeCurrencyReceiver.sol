@@ -14,10 +14,7 @@ abstract contract NativeCurrencyReceiver is ControlCenterManager {
     using EventUtils for EventUtils.AddressItems;
     using EventUtils for EventUtils.UintItems;
 
-    /**
-     * @notice Receive native currency payment and emit an event.
-     */
-    receive() external payable {
+    function _emitReceive() internal {
         EventUtils.EventLogData memory eventData;
         eventData.uintItems.initItems(1);
         eventData.uintItems.setItem(0, "value", msg.value);
@@ -25,5 +22,12 @@ abstract contract NativeCurrencyReceiver is ControlCenterManager {
         eventData.addressItems.setItem(0, "from", msg.sender);
 
         _controlCenter.emitEventLog1("NativeCurrencyReceived", Cast._toBytes32(address(this)), eventData);
+    }
+
+    /**
+     * @notice Receive native currency payment and emit an event.
+     */
+    receive() external payable {
+        _emitReceive();
     }
 }

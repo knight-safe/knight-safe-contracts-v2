@@ -28,6 +28,7 @@ contract KnightSafe is
         _initOwnerManager(address(1));
     }
 
+    /// @inheritdoc IKnightSafe
     function initialize(address owner, address controlCenter, address fallbackHandler) external {
         _initOwnerManager(owner);
         _initPolicyManager();
@@ -35,10 +36,12 @@ contract KnightSafe is
         if (fallbackHandler != address(0)) _internalSetFallbackHandler(fallbackHandler);
     }
 
+    /// @inheritdoc IKnightSafe
     function updateFallbackHandler(address handler) external onlyOwner {
         _internalSetFallbackHandler(handler);
     }
 
+    /// @inheritdoc IKnightSafe
     function updateControlCenter(address controlCenter) external onlyOwner {
         _setControlCenter(controlCenter);
     }

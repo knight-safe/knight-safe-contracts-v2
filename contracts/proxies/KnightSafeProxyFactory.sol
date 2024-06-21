@@ -20,8 +20,29 @@ contract KnightSafeProxyFactory {
         CONTROL_CENTER = ControlCenter(controlCenterAddress);
     }
 
-    function proxyCreationCode() public pure returns (bytes memory) {
-        return type(KnightSafeProxy).creationCode;
+    /**
+     * @notice Compute the address of a new proxy contract
+     * @dev Returns the address where a contract will be stored if deployed via {deploy} from a contract located at
+     * `deployer`. If `deployer` is this contract's address, returns the same value as {computeAddress}.
+     * @param saltNonce Nonce that will be used to generate the salt to calculate the address of the new proxy contract.
+     * @param implementation Address of implementation contract
+     */
+    function computeAddress(uint256 saltNonce, address implementation) external view returns (address addr) {
+        address contractAddress = address(this);
+        bytes32 creationCodeHash =
+            keccak256(abi.encodePacked(type(KnightSafeProxy).creationCode, uint256(uint160(address(implementation)))));
+        bytes32 salt = keccak256(abi.encodePacked(saltNonce));
+        /* solhint-disable no-inline-assembly */
+        assembly {
+            let ptr := mload(0x40)
+
+            mstore(add(ptr, 0x40), creationCodeHash)
+            mstore(add(ptr, 0x20), salt)
+            mstore(ptr, contractAddress)
+            let start := add(ptr, 0x0b)
+            mstore8(start, 0xff)
+            addr := keccak256(start, 85)
+        }
     }
 
     /**
@@ -41,7 +62,7 @@ contract KnightSafeProxyFactory {
         bytes32 salt = keccak256(abi.encodePacked(saltNonce));
         proxy = _deployProxy(implementation, data, salt);
 
-        ProxyFactoryEventUtils.emitProxyCreation(CONTROL_CENTER, implementation, address(proxy), msg.sender, salt);
+        ProxyFactoryEventUtils.emitProxyCreation(CONTROL_CENTER, implementation, address(proxy), msg.sender, saltNonce);
     }
 
     function _deployProxy(address implementation, bytes memory data, bytes32 salt)
@@ -68,22 +89,6 @@ contract KnightSafeProxyFactory {
             assembly {
                 if eq(call(gas(), proxy, 0, add(data, 0x20), mload(data), 0, 0), 0) { revert(0, 0) }
             }
-        }
-    }
-
-    function computeAddress(uint256 saltNonce, bytes32 creationCodeHash) external view returns (address addr) {
-        address contractAddress = address(this);
-        bytes32 salt = keccak256(abi.encodePacked(saltNonce));
-        /* solhint-disable no-inline-assembly */
-        assembly {
-            let ptr := mload(0x40)
-
-            mstore(add(ptr, 0x40), creationCodeHash)
-            mstore(add(ptr, 0x20), salt)
-            mstore(ptr, contractAddress)
-            let start := add(ptr, 0x0b)
-            mstore8(start, 0xff)
-            addr := keccak256(start, 85)
         }
     }
 }

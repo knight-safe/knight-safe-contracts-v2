@@ -140,11 +140,18 @@ interface IControlCenter is IEventEmitter {
     function setDailyVolumeExpiryDate(address knightSafeAddress, uint256 expiryDate) external;
 
     /**
-     * @notice get daily transaction volume limit
+     * @notice get total transaction volume limit
      * @param knightSafeAddress knight safe account
      * @return Limit transaction volume limit with 30 decimals
      */
     function getMaxTradingVolume(address knightSafeAddress) external view returns (uint256);
+    /**
+     * @notice get volume limit expiration date
+     * @dev will return 0 for unset value
+     * @param knightSafeAddress knight safe account
+     * @return timestamp Expiration date of the limit
+     */
+    function getMaxVolumeExpiryDate(address knightSafeAddress) external view returns (uint256);
     /**
      * @notice set account volume limit
      * @dev only Admin can call

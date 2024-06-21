@@ -45,22 +45,27 @@ abstract contract OwnerManager is IOwnerManager, Context, ControlCenterManager {
         _owner = owner;
     }
 
+    /// @inheritdoc IOwnerManager
     function getOwner() public view returns (address) {
         return _owner;
     }
 
+    /// @inheritdoc IOwnerManager
     function getIsTakeoverInProgress() public view returns (bool) {
         return _isTakeoverInProgress;
     }
 
+    /// @inheritdoc IOwnerManager
     function getTakeoverTimestamp() public view returns (uint256) {
         return _isTakeoverInProgress ? _takeoverTimestamp : 0;
     }
 
+    /// @inheritdoc IOwnerManager
     function getTakeoverStatus() public view returns (address, bool, uint256, uint256) {
         return (_backupOwner, _isTakeoverInProgress, getTakeoverTimestamp(), _takeoverDelayIsSecond);
     }
 
+    /// @inheritdoc IOwnerManager
     function setBackupOwner(address backupOwner, uint256 takeoverDelayIsSecond) public onlyOwner {
         if (_isTakeoverInProgress) revert Errors.InvalidTakeoverStatus(_isTakeoverInProgress);
         if (backupOwner == address(this) || backupOwner == address(0)) revert Errors.InvalidAddress(backupOwner);
@@ -70,6 +75,7 @@ abstract contract OwnerManager is IOwnerManager, Context, ControlCenterManager {
         OwnerManagerEventUtils.emitUpdatedBackupOwner(_controlCenter, address(this), backupOwner, takeoverDelayIsSecond);
     }
 
+    /// @inheritdoc IOwnerManager
     function requestTakeover() public {
         if (!_checkBackupOwner()) revert Errors.Unauthorized(_msgSender(), "BACKUP");
         if (_isTakeoverInProgress) revert Errors.InvalidTakeoverStatus(_isTakeoverInProgress);
@@ -81,6 +87,7 @@ abstract contract OwnerManager is IOwnerManager, Context, ControlCenterManager {
         );
     }
 
+    /// @inheritdoc IOwnerManager
     function confirmTakeover() public {
         if (!_isTakeoverInProgress) revert Errors.InvalidTakeoverStatus(_isTakeoverInProgress);
         if (!_checkOwner() && block.timestamp < _takeoverTimestamp) revert Errors.TakeoverIsNotReady();
@@ -90,6 +97,7 @@ abstract contract OwnerManager is IOwnerManager, Context, ControlCenterManager {
         OwnerManagerEventUtils.emitConfirmedTakeover(_controlCenter, address(this), _owner, prevOwner);
     }
 
+    /// @inheritdoc IOwnerManager
     function instantTakeover() public {
         if (!_checkBackupOwner()) revert Errors.Unauthorized(_msgSender(), "BACKUP");
         if (_isTakeoverInProgress) revert Errors.InvalidTakeoverStatus(_isTakeoverInProgress);
@@ -100,11 +108,7 @@ abstract contract OwnerManager is IOwnerManager, Context, ControlCenterManager {
         OwnerManagerEventUtils.emitInstantTakeover(_controlCenter, address(this), _owner, prevOwner);
     }
 
-    function _takeover() private {
-        _owner = _backupOwner;
-        _isTakeoverInProgress = false;
-    }
-
+    /// @inheritdoc IOwnerManager
     function revokeTakeover() public {
         if (!_checkBackupOwner() && !_checkOwner()) revert Errors.Unauthorized(_msgSender(), "BACKUP+");
         if (!_isTakeoverInProgress) revert Errors.InvalidTakeoverStatus(_isTakeoverInProgress);
@@ -113,14 +117,17 @@ abstract contract OwnerManager is IOwnerManager, Context, ControlCenterManager {
         OwnerManagerEventUtils.emitRevokeTakeover(_controlCenter, address(this), _owner, _backupOwner);
     }
 
+    /// @inheritdoc IOwnerManager
     function isAdmin(address admin) public view returns (bool) {
         return _admins.contains(admin);
     }
 
+    /// @inheritdoc IOwnerManager
     function getAdmins() external view returns (address[] memory) {
         return _admins.values();
     }
 
+    /// @inheritdoc IOwnerManager
     function addAdmin(address admin) public onlyOwner {
         if (isAdmin(admin)) revert Errors.AddressAlreadyExist(admin);
         _admins.add(admin);
@@ -128,10 +135,16 @@ abstract contract OwnerManager is IOwnerManager, Context, ControlCenterManager {
         OwnerManagerEventUtils.emitAddedAdmin(_controlCenter, address(this), admin);
     }
 
+    /// @inheritdoc IOwnerManager
     function removeAdmin(address admin) public onlyOwner {
         if (!isAdmin(admin)) revert Errors.AddressNotExist(admin);
         _admins.remove(admin);
 
         OwnerManagerEventUtils.emitRemovedAdmin(_controlCenter, address(this), admin);
+    }
+
+    function _takeover() private {
+        _owner = _backupOwner;
+        _isTakeoverInProgress = false;
     }
 }

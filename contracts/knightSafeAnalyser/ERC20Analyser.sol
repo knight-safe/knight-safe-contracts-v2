@@ -5,7 +5,7 @@ pragma solidity ^0.8.20;
 import "./BaseKnightSafeAnalyser.sol";
 import "../interfaces/IKnightSafeAnalyser.sol";
 
-contract ERC20KnightSafeAnalyser is BaseKnightSafeAnalyser {
+contract ERC20Analyser is BaseKnightSafeAnalyser {
     /// @inheritdoc IKnightSafeAnalyser
     function extractAddressesWithValue(address to, bytes calldata data)
         external
@@ -38,16 +38,16 @@ contract ERC20KnightSafeAnalyser is BaseKnightSafeAnalyser {
             return (addrList, valueList);
         } else if (selector == Selectors.TRANSFER) {
             addrList = new address[](2);
-            addrList[0] = _getAddressFromBytes(data, 0); // _recipient
-            addrList[1] = to; // _token
+            addrList[0] = _getAddressFromBytes(data, 0); // recipient
+            addrList[1] = to; // token
             valueList = new uint256[](2);
             valueList[0] = 0;
             valueList[1] = _getUintFromBytes(data, 1);
             return (addrList, valueList);
         } else if (selector == Selectors.TRANSFER_FROM) {
             addrList = new address[](3);
-            addrList[0] = _getAddressFromBytes(data, 0); // _sender
-            addrList[1] = _getAddressFromBytes(data, 1); // _recipient
+            addrList[0] = _getAddressFromBytes(data, 0); // sender
+            addrList[1] = _getAddressFromBytes(data, 1); // recipient
             addrList[2] = to; // token
 
             valueList = new uint256[](3);
@@ -56,20 +56,8 @@ contract ERC20KnightSafeAnalyser is BaseKnightSafeAnalyser {
             valueList[2] = _getUintFromBytes(data, 2);
             return (addrList, valueList);
         }
-    }
 
-    function _getAddressFromBytes(bytes calldata _bytes, uint256 _arg) internal pure returns (address addr) {
-        /* solhint-disable no-inline-assembly */
-        assembly {
-            addr := calldataload(add(add(_bytes.offset, shl(5, _arg)), 4))
-        }
-    }
-
-    function _getUintFromBytes(bytes calldata _bytes, uint256 _arg) internal pure returns (uint256 value) {
-        /* solhint-disable no-inline-assembly */
-        assembly {
-            value := calldataload(add(add(_bytes.offset, shl(5, _arg)), 4))
-        }
+        revert UnsupportedCommand();
     }
 }
 

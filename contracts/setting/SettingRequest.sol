@@ -7,20 +7,25 @@ import "./SettingEventUtils.sol";
 import "../base/ControlCenterManager.sol";
 import "../error/Errors.sol";
 import "../base/OwnerManager.sol";
+import "../interfaces/ISettingRequest.sol";
 
-abstract contract SettingRequest is ControlCenterManager, OwnerManager {
+/// @notice inherit Doc {ISettingRequest}
+contract SettingRequest is ControlCenterManager, OwnerManager, ISettingRequest {
     uint256 private _nonce;
-    mapping(uint256 => SettingUtils.Request) public settingRequests;
+    mapping(uint256 => SettingUtils.Request) private _settingRequests;
 
+    /// @notice inherit Doc {ISettingRequest}
     function getNextSettingRequestId() public view returns (uint256) {
         return _nonce;
     }
 
+    /// @notice inherit Doc {ISettingRequest}
     function getSettingRequest(uint256 reqId) public view returns (SettingUtils.Request memory) {
         if (reqId >= _nonce) revert Errors.InvalidReqId(reqId);
-        return settingRequests[reqId];
+        return _settingRequests[reqId];
     }
 
+    /// @notice inherit Doc {ISettingRequest}
     function requestSetting(uint8 selector, bytes memory param) public onlyAdminOrOwner returns (uint256 reqId) {
         SettingUtils.Request memory request;
         request.requester = _msgSender();
@@ -30,17 +35,18 @@ abstract contract SettingRequest is ControlCenterManager, OwnerManager {
 
         reqId = _nonce;
         _nonce += 1;
-        settingRequests[reqId] = request;
+        _settingRequests[reqId] = request;
         SettingEventUtils.emitCreatedSettingRequest(_controlCenter, address(this), reqId);
     }
 
     function _updateSettingRequestStatus(uint256 reqId, SettingUtils.Status status) private {
-        if (settingRequests[reqId].status != SettingUtils.Status.Pending || status == SettingUtils.Status.Pending) {
+        if (_settingRequests[reqId].status != SettingUtils.Status.Pending || status == SettingUtils.Status.Pending) {
             revert Errors.InvalidSettingStatus();
         }
-        settingRequests[reqId].status = status;
+        _settingRequests[reqId].status = status;
     }
 
+    /// @notice inherit Doc {ISettingRequest}
     function executeSettingByReqId(uint256 reqId) public onlyOwner returns (bool success) {
         SettingUtils.Request memory request = getSettingRequest(reqId);
         _updateSettingRequestStatus(reqId, SettingUtils.Status.Completed);
@@ -59,6 +65,7 @@ abstract contract SettingRequest is ControlCenterManager, OwnerManager {
         SettingEventUtils.emitApprovedSettingRequest(_controlCenter, address(this), reqId);
     }
 
+    /// @notice inherit Doc {ISettingRequest}
     function cancelSettingByReqId(uint256 reqId) public onlyAdminOrOwner {
         SettingUtils.Request memory request = getSettingRequest(reqId);
         _updateSettingRequestStatus(reqId, SettingUtils.Status.Cancelled);
@@ -67,6 +74,7 @@ abstract contract SettingRequest is ControlCenterManager, OwnerManager {
         SettingEventUtils.emitCancelledSettingRequest(_controlCenter, address(this), reqId);
     }
 
+    /// @notice inherit Doc {ISettingRequest}
     function rejectSettingByReqId(uint256 reqId) public onlyOwner {
         if (reqId >= _nonce) revert Errors.InvalidReqId(reqId);
         _updateSettingRequestStatus(reqId, SettingUtils.Status.Rejected);

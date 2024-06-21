@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.20;
 
-import {AggregatorV2V3Interface} from "@chainlink/contracts/interfaces/feeds/AggregatorV2V3Interface.sol";
+import {AggregatorV2V3Interface} from "@chainlink/contracts/v0.8/interfaces/AggregatorV2V3Interface.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {Errors} from "@/error/Errors.sol";
@@ -20,13 +20,14 @@ contract ChainlinkPriceFeed is Context, IPriceFeed {
     uint8 private constant _BASE_DECIMALS = 30;
     uint8 private constant _NATIVE_DECIMALS = 18;
 
-    constructor(address controlCenter, address wrappedNativeTokenAddress, address nativeTokenPriceFeed) {
+    constructor(address owner, address controlCenter, address wrappedNativeTokenAddress, address nativeTokenPriceFeed) {
         if (
-            controlCenter == address(0) || wrappedNativeTokenAddress == address(0) || nativeTokenPriceFeed == address(0)
+            owner == address(0) || controlCenter == address(0) || wrappedNativeTokenAddress == address(0)
+                || nativeTokenPriceFeed == address(0)
         ) {
             revert Errors.IsNullValue();
         }
-        _owner = _msgSender();
+        _owner = owner;
 
         _controlCenter = controlCenter;
         _wrappedNativeTokenAddress = wrappedNativeTokenAddress;
@@ -55,7 +56,7 @@ contract ChainlinkPriceFeed is Context, IPriceFeed {
     function setPriceFeed(address token, address priceFeed) public onlyOwner {
         _priceFeedMap[token] = priceFeed;
 
-        PriceFeedEventUtils.emitsetPriceFeed(_controlCenter, token, priceFeed);
+        PriceFeedEventUtils.emitSetPriceFeed(_controlCenter, token, priceFeed);
     }
 
     /// @inheritdoc IPriceFeed
@@ -66,7 +67,7 @@ contract ChainlinkPriceFeed is Context, IPriceFeed {
             _priceFeedMap[tokens[i]] = priceFeeds[i];
         }
 
-        PriceFeedEventUtils.emitsetPriceFeed(_controlCenter, tokens, priceFeeds);
+        PriceFeedEventUtils.emitSetPriceFeed(_controlCenter, tokens, priceFeeds);
     }
 
     /// @inheritdoc IPriceFeed
@@ -85,15 +86,19 @@ contract ChainlinkPriceFeed is Context, IPriceFeed {
             if (amounts[i] == 0) {
                 continue;
             }
-            uint8 tokenDecimals = 0;
+
             (uint256 answer, uint8 priceFeedDecimals) = getChainlinkDataFeedLatestAnswer(contractAddresses[i]);
-            try IERC20Metadata(contractAddresses[i]).decimals() returns (uint8 dec_) {
-                tokenDecimals = dec_;
-            } catch {
-                // catch when contractAddress not implement IERC20Metadata
-                // This is executed in case revert() was used.
+
+            uint8 tokenDecimals = 0;
+
+            bytes memory data = abi.encodeWithSelector(IERC20Metadata.decimals.selector);
+            (bool success, bytes memory returnData) = contractAddresses[i].staticcall(data);
+            if (success && returnData.length == 32) {
+                tokenDecimals = abi.decode(returnData, (uint8));
+            } else {
                 continue;
             }
+
             totalVolume += _scalePrice((uint256(answer) * amounts[i]), (priceFeedDecimals + tokenDecimals));
         }
         return totalVolume;
@@ -112,7 +117,8 @@ contract ChainlinkPriceFeed is Context, IPriceFeed {
     function getChainlinkDataFeedLatestAnswer(address token) public view returns (uint256 amt, uint8 decimals) {
         address priceFeed = _priceFeedMap[token];
         if (priceFeed == address(0)) {
-            revert Errors.IsNullValue();
+            // revert Errors.IsNullValue();
+            return (0, 0);
         }
 
         (, int256 answer,,,) = AggregatorV2V3Interface(priceFeed).latestRoundData();

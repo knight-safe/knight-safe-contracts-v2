@@ -12,6 +12,7 @@ import {SettingSelectors} from "../setting/SettingUtils.sol";
 
 /// @notice inherit Doc {IControlCenter}
 contract ControlCenter is IControlCenter, EventEmitter {
+    /// @inheritdoc IControlCenter
     string public constant override VERSION = "0.0.0";
 
     struct AccountLimit {
@@ -44,8 +45,8 @@ contract ControlCenter is IControlCenter, EventEmitter {
 
     uint256 private _minPolicyAllowed = 3;
 
-    constructor() {
-        _adminMap[_owner] = true;
+    constructor(address owner) EventEmitter(owner) {
+        _adminMap[owner] = true;
         _analyserVersionMap[address(0)] = "0x0";
         _analyserVersionMap[address(1)] = "0x1";
     }
@@ -59,15 +60,18 @@ contract ControlCenter is IControlCenter, EventEmitter {
         return _adminMap[_msgSender()];
     }
 
+    /// @inheritdoc IControlCenter
     function setAdmin(address admin, bool isAdmin) public onlyOwner {
         _adminMap[admin] = isAdmin;
         ControlCenterEventUtils.emitSetAdmin(this, admin, isAdmin);
     }
 
+    /// @inheritdoc IControlCenter
     function isOfficialImplementation(address implementationAddress) public view returns (bool) {
         return _knightSafeVersionMap[implementationAddress] != 0;
     }
 
+    /// @inheritdoc IControlCenter
     function addOfficialImplementation(address implementationAddress, bytes32 version) public onlyOwner {
         if (isOfficialImplementation(implementationAddress)) revert Errors.AddressAlreadyExist(implementationAddress);
         if (version == 0) revert Errors.IsNullValue();
@@ -76,6 +80,7 @@ contract ControlCenter is IControlCenter, EventEmitter {
         ControlCenterEventUtils.emitAddedOfficialImplementation(this, implementationAddress, version);
     }
 
+    /// @inheritdoc IControlCenter
     function removeOfficialImplementation(address implementationAddress) public onlyOwner {
         if (!isOfficialImplementation(implementationAddress)) revert Errors.AddressNotExist(implementationAddress);
         _knightSafeVersionMap[implementationAddress] = 0;
@@ -83,10 +88,12 @@ contract ControlCenter is IControlCenter, EventEmitter {
         ControlCenterEventUtils.emitRemovedOfficialImplementation(this, implementationAddress);
     }
 
+    /// @inheritdoc IControlCenter
     function isOfficialAnalyser(address analyserAddress) public view returns (bool) {
         return _analyserVersionMap[analyserAddress] != 0;
     }
 
+    /// @inheritdoc IControlCenter
     function addOfficialAnalyser(address analyserAddress, bytes32 version) public onlyAdmin {
         if (isOfficialAnalyser(analyserAddress)) revert Errors.AddressAlreadyExist(analyserAddress);
         if (version == 0) revert Errors.IsNullValue();
@@ -99,6 +106,7 @@ contract ControlCenter is IControlCenter, EventEmitter {
         ControlCenterEventUtils.emitAddedOfficialAnalyser(this, analyserAddress, version);
     }
 
+    /// @inheritdoc IControlCenter
     function removeOfficialAnalyser(address analyserAddress) public onlyAdmin {
         if (!isOfficialAnalyser(analyserAddress)) revert Errors.AddressNotExist(analyserAddress);
         _analyserVersionMap[analyserAddress] = 0;
@@ -106,33 +114,39 @@ contract ControlCenter is IControlCenter, EventEmitter {
         ControlCenterEventUtils.emitRemoveOfficialAnalyser(this, analyserAddress);
     }
 
+    /// @inheritdoc IControlCenter
     function isSpendingLimitEnabled(address knightSafeAddress) public view returns (bool) {
         return _spendingLimitMap[knightSafeAddress];
     }
 
+    /// @inheritdoc IControlCenter
     function setSpendingLimitEnabled(address knightSafeAddress, bool isEnabled) public onlyAdmin {
         _spendingLimitMap[knightSafeAddress] = isEnabled;
         ControlCenterEventUtils.emitSetSpendingLimitEnabled(this, knightSafeAddress, isEnabled);
     }
 
+    /// @inheritdoc IControlCenter
     function getMaxPolicyAllowed(address knightSafeAddress) public view returns (uint256) {
         return _maxPolicyAllowedMap[knightSafeAddress] > _minPolicyAllowed
             ? _maxPolicyAllowedMap[knightSafeAddress]
             : _minPolicyAllowed;
     }
 
+    /// @inheritdoc IControlCenter
     function setMaxPolicyAllowed(address knightSafeAddress, uint256 maxPolicyAllowed) public onlyAdmin {
         _maxPolicyAllowedMap[knightSafeAddress] = maxPolicyAllowed;
 
         ControlCenterEventUtils.emitSetMaxPolicyAllowed(this, knightSafeAddress, maxPolicyAllowed);
     }
 
+    /// @inheritdoc IControlCenter
     function setGlobalMinPolicyAllowed(uint256 minPolicyAllowed) public onlyOwner {
         _minPolicyAllowed = minPolicyAllowed;
 
         ControlCenterEventUtils.emitSetGlobalMinPolicyAllowed(this, minPolicyAllowed);
     }
 
+    /// @inheritdoc IControlCenter
     function getAdminEventAccess() external view returns (bytes4[] memory) {
         bytes4[] memory eventList = new bytes4[](_adminEventAccess.length);
         for (uint256 i = 0; i < _adminEventAccess.length; i++) {
@@ -141,10 +155,12 @@ contract ControlCenter is IControlCenter, EventEmitter {
         return eventList;
     }
 
+    /// @inheritdoc IControlCenter
     function getAdminEventAccessCount() external view returns (uint256) {
         return _adminEventAccess.length;
     }
 
+    /// @inheritdoc IControlCenter
     function getAdminEventAccessById(uint8 id) public view returns (bytes4) {
         return _adminEventAccess[id];
     }
@@ -166,6 +182,7 @@ contract ControlCenter is IControlCenter, EventEmitter {
         return success && returnSize >= 0x20 && returnValue > 0;
     }
 
+    /// @inheritdoc IControlCenter
     function setPriceFeed(address priceFeed) public onlyOwner {
         _priceFeed = priceFeed;
         isKnightSafe[priceFeed] = true;
@@ -173,10 +190,12 @@ contract ControlCenter is IControlCenter, EventEmitter {
         ControlCenterEventUtils.emitSetPriceFeed(this, priceFeed);
     }
 
+    /// @inheritdoc IControlCenter
     function getPriceFeed() public view returns (address) {
         return _priceFeed;
     }
 
+    /// @inheritdoc IControlCenter
     function getDailyVolume(address knightSafeAddress) public view returns (uint256) {
         if (
             _tradingLimitMap[knightSafeAddress].dailyLimitExpiryDate < block.timestamp
@@ -187,34 +206,44 @@ contract ControlCenter is IControlCenter, EventEmitter {
         return _tradingLimitMap[knightSafeAddress].dailyLimit;
     }
 
+    /// @inheritdoc IControlCenter
     function setDailyVolume(address knightSafeAddress, uint256 volume) public onlyAdmin {
         _tradingLimitMap[knightSafeAddress].dailyLimit = volume;
 
         ControlCenterEventUtils.emitSetDailyLimit(this, knightSafeAddress, volume);
     }
 
+    /// @inheritdoc IControlCenter
     function setDailyVolumeExpiryDate(address knightSafeAddress, uint256 expiryDate) public onlyAdmin {
         _tradingLimitMap[knightSafeAddress].dailyLimitExpiryDate = expiryDate;
 
         ControlCenterEventUtils.emitSetDailyLimitExpiry(this, knightSafeAddress, expiryDate);
     }
 
+    /// @inheritdoc IControlCenter
     function setMaxTradingVolume(address knightSafeAddress, uint256 volume) public onlyAdmin {
         _tradingLimitMap[knightSafeAddress].volume = volume;
 
         ControlCenterEventUtils.emitSetMaxTradingVolume(this, knightSafeAddress, volume);
     }
 
+    /// @inheritdoc IControlCenter
     function setMaxTradingVolumeExpiryDate(address knightSafeAddress, uint256 expiryDate) public onlyAdmin {
         _tradingLimitMap[knightSafeAddress].volumeExpiryDate = expiryDate;
 
         ControlCenterEventUtils.emitSetMaxTradingVolumeExpiry(this, knightSafeAddress, expiryDate);
     }
 
+    /// @inheritdoc IControlCenter
     function getMaxTradingVolume(address knightSafeAddress) public view returns (uint256) {
         if (_tradingLimitMap[knightSafeAddress].volumeExpiryDate < block.timestamp) {
             return 0;
         }
         return _tradingLimitMap[knightSafeAddress].volume;
+    }
+
+    /// @inheritdoc IControlCenter
+    function getMaxVolumeExpiryDate(address knightSafeAddress) public view returns (uint256) {
+        return _tradingLimitMap[knightSafeAddress].volumeExpiryDate;
     }
 }

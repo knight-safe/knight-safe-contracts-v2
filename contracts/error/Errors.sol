@@ -33,6 +33,7 @@ library Errors {
     error AddressIsNotKnightSafeAnalyser(address _address);
     error AddressIsReadOnlyWhitelist(uint256 policyId, address _address);
     error AddressNotInWhitelist(uint256 policyId, address _address);
+    error SelectorNotSupport();
     error ExceedMaxTradingVolume(uint256 txnVolume, uint256 maxVolume);
     error ExceedPolicyVolume(uint256 policyId, uint256 volume);
 

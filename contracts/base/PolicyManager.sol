@@ -40,14 +40,17 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
         nextPolicyId = 1;
     }
 
+    /// @inheritdoc IPolicyManager
     function getActivePolicyIds() public view returns (uint256[] memory) {
         return _activePolicyIds.values();
     }
 
+    /// @inheritdoc IPolicyManager
     function isActivePolicy(uint256 policyId) external view returns (bool) {
         return _activePolicyIds.contains(policyId);
     }
 
+    /// @inheritdoc IPolicyManager
     function createPolicy() external onlyAdminOrOwner {
         uint256 maxPolicyCount = (IControlCenter(_controlCenter)).getMaxPolicyAllowed(address(this));
         if (_activePolicyIds.length() > maxPolicyCount) revert Errors.MaxPolicyCountReached(maxPolicyCount);
@@ -58,6 +61,7 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
         PolicyManagerEventUtils.emitCreatedPolicy(_controlCenter, address(this), policyId);
     }
 
+    /// @inheritdoc IPolicyManager
     function removePolicy(uint256 policyId) public onlyAdminOrOwner {
         if (policyId == 0) revert Errors.InvalidOperation();
         if (!_activePolicyIds.contains(policyId)) revert Errors.PolicyNotExist(policyId);
@@ -66,14 +70,17 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
         PolicyManagerEventUtils.emitRemovedPolicy(_controlCenter, address(this), policyId);
     }
 
+    /// @inheritdoc IPolicyManager
     function getTraders(uint256 policyId) external view returns (address[] memory) {
         return _policyMap[policyId].traders.values();
     }
 
+    /// @inheritdoc IPolicyManager
     function isTrader(uint256 policyId, address trader) public view returns (bool) {
         return _policyMap[policyId].traders.contains(trader);
     }
 
+    /// @inheritdoc IPolicyManager
     function addTrader(uint256 policyId, address trader) public onlyOwner {
         if (!_activePolicyIds.contains(policyId)) revert Errors.PolicyNotExist(policyId);
         if (isTrader(policyId, trader)) revert Errors.AddressAlreadyExist(trader);
@@ -82,6 +89,7 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
         PolicyManagerEventUtils.emitAddedTrader(_controlCenter, address(this), policyId, trader);
     }
 
+    /// @inheritdoc IPolicyManager
     function removeTrader(uint256 policyId, address trader) public onlyAdminOrOwner {
         if (!_activePolicyIds.contains(policyId)) revert Errors.PolicyNotExist(policyId);
         if (!isTrader(policyId, trader)) revert Errors.AddressNotExist(trader);
@@ -90,14 +98,17 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
         PolicyManagerEventUtils.emitRemovedTrader(_controlCenter, address(this), policyId, trader);
     }
 
+    /// @inheritdoc IPolicyManager
     function getWhitelistAddresses(uint256 policyId) external view returns (address[] memory) {
         return _policyMap[policyId].whitelistKeys.values();
     }
 
+    /// @inheritdoc IPolicyManager
     function isPolicyWhitelistAddress(uint256 policyId, address _address) public view returns (bool) {
         return _policyMap[policyId].whitelistKeys.contains(_address);
     }
 
+    /// @inheritdoc IPolicyManager
     function isPolicyOrGlobalWhitelistAddress(uint256 policyId, address _address) public view returns (bool) {
         return _policyMap[policyId].whitelistKeys.contains(_address) || _policyMap[0].whitelistKeys.contains(_address);
     }
@@ -127,6 +138,7 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
         }
     }
 
+    /// @inheritdoc IPolicyManager
     function removeWhitelist(uint256 policyId, address whitelistAddress) public onlyAdminOrOwner {
         if (!_activePolicyIds.contains(policyId)) revert Errors.PolicyNotExist(policyId);
         if (whitelistAddress == address(0)) revert Errors.InvalidAddress(address(0));
@@ -139,18 +151,22 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
         PolicyManagerEventUtils.emitRemovedWhitelist(_controlCenter, address(this), policyId, whitelistAddress);
     }
 
+    /// @inheritdoc IPolicyManager
     function getKnightSafeAnalyserAddress(uint256 policyId, address whitelistAddress) public view returns (address) {
         return _policyMap[policyId].whitelistValues[whitelistAddress];
     }
 
+    /// @inheritdoc IPolicyManager
     function getMaxSpendingLimit(uint256 policyId) public view returns (uint256) {
         return _policyMap[policyId].maxSpendingLimit;
     }
 
+    /// @inheritdoc IPolicyManager
     function getDailyVolumeSpent(uint256 policyId) public view returns (uint256) {
         return _policyMap[policyId].dailyVolumeSpent;
     }
 
+    /// @inheritdoc IPolicyManager
     function setMaxSpendingLimit(uint256 policyId, uint256 maxSpendingLimit) public onlyOwner {
         if (!_activePolicyIds.contains(policyId)) revert Errors.PolicyNotExist(policyId);
         if (!_controlCenter.isSpendingLimitEnabled(address(this))) revert Errors.FeatureNotSupport("RETAIL");
@@ -158,6 +174,7 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
         _policyMap[policyId].maxSpendingLimit = maxSpendingLimit;
     }
 
+    /// @inheritdoc IPolicyManager
     function reduceSpendingLimit(uint256 policyId, uint256 maxSpendingLimit) public onlyAdminOrOwner {
         if (!_activePolicyIds.contains(policyId)) revert Errors.PolicyNotExist(policyId);
         if (!_controlCenter.isSpendingLimitEnabled(address(this))) revert Errors.FeatureNotSupport("RETAIL");
@@ -168,6 +185,7 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
         _policyMap[policyId].maxSpendingLimit = maxSpendingLimit;
     }
 
+    /// @inheritdoc IPolicyManager
     function resetDailySpent(uint256 policyId) public onlyOwner {
         _policyMap[policyId].dailyVolumeSpent = 0;
     }

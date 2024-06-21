@@ -14,7 +14,7 @@ interface ITransactionRequest {
     function getTotalVolumeSpent() external view returns (uint256);
 
     /// @notice get transaction request nonce
-    function getTransactionRequestNonce() external view returns (uint256);
+    function getNextTransactionRequestId() external view returns (uint256);
     /// @notice get transaction request information by request id
     function getTransactionRequest(uint256 reqId) external view returns (Transaction.Request memory);
 
@@ -52,7 +52,13 @@ interface ITransactionRequest {
      */
     function validatePolicyLimit(uint256 policyId, bool useGlobalWhitelist, uint256 volume) external;
 
-    /// @notice request transaction
+    /**
+     * @notice request transaction
+     * @param onBehalfOfPolicyId policy id to request transaction
+     * @param to to contract
+     * @param value transaction value
+     * @param data encoded transaction data
+     */
     function requestTransaction(uint256 onBehalfOfPolicyId, address to, uint256 value, bytes memory data)
         external
         returns (uint256 reqId);

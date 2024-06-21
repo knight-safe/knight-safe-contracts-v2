@@ -8,21 +8,21 @@ import "../utils/Cast.sol";
 
 library ProxyFactoryEventUtils {
     using EventUtils for EventUtils.AddressItems;
-    using EventUtils for EventUtils.Bytes32Items;
+    using EventUtils for EventUtils.UintItems;
 
     function emitProxyCreation(
         EventEmitter eventEmitter,
         address implementation,
         address proxy,
         address owner,
-        bytes32 salt
+        uint256 salt
     ) external {
         EventUtils.EventLogData memory eventData;
         eventData.addressItems.initItems(2);
         eventData.addressItems.setItem(0, "account", proxy);
         eventData.addressItems.setItem(1, "owner", owner);
-        eventData.bytes32Items.initItems(1);
-        eventData.bytes32Items.setItem(0, "salt", salt);
+        eventData.uintItems.initItems(1);
+        eventData.uintItems.setItem(0, "salt", salt);
 
         eventEmitter.emitEventLog2("ProxyCreation", Cast._toBytes32(implementation), Cast._toBytes32(proxy), eventData);
     }

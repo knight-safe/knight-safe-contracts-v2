@@ -8,12 +8,15 @@ import "../interfaces/IEventEmitter.sol";
 
 /// @notice inherit Doc {IEventEmitter}
 abstract contract EventEmitter is IEventEmitter, Context {
-    address internal _owner;
+    address internal immutable _owner;
     mapping(address => bool) private _factory;
     mapping(address => bool) internal isKnightSafe;
 
-    constructor() {
-        _owner = _msgSender();
+    constructor(address owner) {
+        if (owner == address(0)) {
+            revert Errors.IsNullValue();
+        }
+        _owner = owner;
     }
 
     modifier onlyOwner() {
@@ -32,22 +35,27 @@ abstract contract EventEmitter is IEventEmitter, Context {
         return _owner == _msgSender();
     }
 
+    /// @inheritdoc IEventEmitter
     function isFactory(address sender) public view returns (bool) {
         return _factory[sender];
     }
 
+    /// @inheritdoc IEventEmitter
     function setFactory(address factory) public onlyOwner {
         _factory[factory] = true;
     }
 
+    /// @inheritdoc IEventEmitter
     function disableFactory(address factory) public onlyOwner {
         _factory[factory] = false;
     }
 
+    /// @inheritdoc IEventEmitter
     function isActiveAccount(address sender) public view returns (bool) {
         return isKnightSafe[sender];
     }
 
+    /// @inheritdoc IEventEmitter
     function setActiveAccount(address sender) public {
         if (!isFactory(_msgSender())) {
             revert Errors.Unauthorized(_msgSender(), "FACTORY");
@@ -55,14 +63,17 @@ abstract contract EventEmitter is IEventEmitter, Context {
         isKnightSafe[sender] = true;
     }
 
+    /// @inheritdoc IEventEmitter
     function disableActiveAccount(address sender) public onlyOwner {
         isKnightSafe[sender] = false;
     }
 
+    /// @inheritdoc IEventEmitter
     function emitEventLog(string memory eventName, EventUtils.EventLogData memory eventData) external onlyKnightSafe {
         emit EventLog((address(_msgSender())), eventName, eventName, eventData);
     }
 
+    /// @inheritdoc IEventEmitter
     function emitEventLog1(string memory eventName, bytes32 profile, EventUtils.EventLogData memory eventData)
         external
         onlyKnightSafe
@@ -70,6 +81,7 @@ abstract contract EventEmitter is IEventEmitter, Context {
         emit EventLog1((address(_msgSender())), eventName, eventName, profile, eventData);
     }
 
+    /// @inheritdoc IEventEmitter
     function emitEventLog2(
         string memory eventName,
         bytes32 profile,
