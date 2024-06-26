@@ -25,7 +25,8 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
 
     /// @inheritdoc ITransactionRequest
     uint256 public accountVolumeSpent = 0;
-    uint256 private _lastDailyVolumeDate = 0;
+    /// @inheritdoc ITransactionRequest
+    uint256 public lastDailyVolumeDate = 0;
 
     /// @inheritdoc ITransactionRequest
     function getNextTransactionRequestId() public view returns (uint256) {
@@ -78,9 +79,9 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
         returns (uint256)
     {
         uint256 currentTime = block.timestamp;
-        if (currentTime - _lastDailyVolumeDate > 1 days) {
+        if (currentTime - lastDailyVolumeDate > 1 days) {
             dailyVolumeSpent = 0;
-            _lastDailyVolumeDate = currentTime - (currentTime % 1 days); // new day starts at 00:00:00
+            lastDailyVolumeDate = currentTime - (currentTime % 1 days); // new day starts at 00:00:00
         }
 
         uint256 volumeSpent = dailyVolumeSpent + accountVolumeSpent;

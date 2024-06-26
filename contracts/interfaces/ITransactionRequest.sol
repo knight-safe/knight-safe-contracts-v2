@@ -10,6 +10,8 @@ interface ITransactionRequest {
     function dailyVolumeSpent() external view returns (uint256);
     /// @notice get total volume spent in USD
     function accountVolumeSpent() external view returns (uint256);
+    /// @notice get last updated volume date
+    function lastDailyVolumeDate() external view returns (uint256);
     /// @notice get sum of daily and total volume spent  in USD
     function getTotalVolumeSpent() external view returns (uint256);
 

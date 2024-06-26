@@ -38,6 +38,11 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
         if (nextPolicyId != 0) revert Errors.InvalidOperation();
         _activePolicyIds.add(0);
         nextPolicyId = 1;
+
+        _policyMap[0].whitelistValues[address(this)] = address(0);
+        _policyMap[0].whitelistKeys.add(address(this));
+        _policyMap[0].whitelistValues[_owner] = address(0);
+        _policyMap[0].whitelistKeys.add(_owner);
     }
 
     /// @inheritdoc IPolicyManager

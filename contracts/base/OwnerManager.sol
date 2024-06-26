@@ -13,7 +13,7 @@ import "../base/ControlCenterManager.sol";
 abstract contract OwnerManager is IOwnerManager, Context, ControlCenterManager {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    address private _owner;
+    address internal _owner;
     address private _backupOwner;
     uint256 private _takeoverDelayIsSecond;
     bool private _isTakeoverInProgress;
