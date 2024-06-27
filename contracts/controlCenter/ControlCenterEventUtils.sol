@@ -23,6 +23,22 @@ library ControlCenterEventUtils {
         eventEmitter.emitEventLog1("SetAdmin", Cast._toBytes32(_admin), eventData);
     }
 
+    function emitAddedOfficialControlCenter(EventEmitter eventEmitter, address controlCenterAddress, bytes32 version)
+        external
+    {
+        EventUtils.EventLogData memory eventData;
+        eventData.bytes32Items.initItems(1);
+        eventData.bytes32Items.setItem(0, "version", version);
+
+        eventEmitter.emitEventLog1("AddedOfficialControlCenter", Cast._toBytes32(controlCenterAddress), eventData);
+    }
+
+    function emitRemovedOfficialControlCenter(EventEmitter eventEmitter, address controlCenterAddress) external {
+        EventUtils.EventLogData memory eventData;
+
+        eventEmitter.emitEventLog1("RemovedOfficialControlCenter", Cast._toBytes32(controlCenterAddress), eventData);
+    }
+
     function emitAddedOfficialImplementation(EventEmitter eventEmitter, address implementationAddress, bytes32 version)
         external
     {

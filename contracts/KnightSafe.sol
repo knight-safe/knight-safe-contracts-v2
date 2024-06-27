@@ -12,6 +12,7 @@ import "./base/ControlCenterManager.sol";
 import "./base/FallbackManager.sol";
 import "./setting/SettingRequest.sol";
 import "./transaction/TransactionRequest.sol";
+import {IControlCenter} from "./interfaces/IControlCenter.sol";
 
 contract KnightSafe is
     NativeCurrencyReceiver,
@@ -43,6 +44,12 @@ contract KnightSafe is
 
     /// @inheritdoc IKnightSafe
     function updateControlCenter(address controlCenter) external onlyOwner {
+        if (
+            address(_controlCenter) != address(0)
+                && !IControlCenter(_controlCenter).isOfficialControlCenter(controlCenter)
+        ) {
+            revert Errors.InvalidAddress(controlCenter);
+        }
         _setControlCenter(controlCenter);
     }
 }

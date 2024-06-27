@@ -7,6 +7,7 @@ import "./OwnerManager.sol";
 import "./PolicyManagerEventUtils.sol";
 import "../interfaces/IPolicyManager.sol";
 import "../interfaces/IKnightSafeAnalyser.sol";
+import {IControlCenter} from "../interfaces/IControlCenter.sol";
 
 /// @notice inherit Doc {IPolicyManager}
 abstract contract PolicyManager is IPolicyManager, OwnerManager {

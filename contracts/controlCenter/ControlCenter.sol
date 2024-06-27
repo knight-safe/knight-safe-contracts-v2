@@ -28,6 +28,7 @@ contract ControlCenter is IControlCenter, EventEmitter {
     uint256 private constant _BASE_TRADING_VOLUME = 100_000 * (10 ** 30); // 100,000 USD for Retail plan
     mapping(address => AccountLimit) private _tradingLimitMap;
 
+    mapping(address => bytes32) private _controlCenterVersionMap;
     mapping(address => bytes32) private _knightSafeVersionMap;
     mapping(address => bytes32) private _analyserVersionMap;
     mapping(address => bool) private _spendingLimitMap;
@@ -64,6 +65,28 @@ contract ControlCenter is IControlCenter, EventEmitter {
     function setAdmin(address admin, bool isAdmin) public onlyOwner {
         _adminMap[admin] = isAdmin;
         ControlCenterEventUtils.emitSetAdmin(this, admin, isAdmin);
+    }
+
+    /// @inheritdoc IControlCenter
+    function isOfficialControlCenter(address controlCenterAddress) public view returns (bool) {
+        return _controlCenterVersionMap[controlCenterAddress] != 0;
+    }
+
+    /// @inheritdoc IControlCenter
+    function addOfficialControlCenter(address controlCenterAddress, bytes32 version) public onlyOwner {
+        if (isOfficialControlCenter(controlCenterAddress)) revert Errors.AddressAlreadyExist(controlCenterAddress);
+        if (version == 0) revert Errors.IsNullValue();
+        _knightSafeVersionMap[controlCenterAddress] = version;
+
+        ControlCenterEventUtils.emitAddedOfficialControlCenter(this, controlCenterAddress, version);
+    }
+
+    /// @inheritdoc IControlCenter
+    function removeOfficialControlCenter(address controlCenterAddress) public onlyOwner {
+        if (!isOfficialControlCenter(controlCenterAddress)) revert Errors.AddressNotExist(controlCenterAddress);
+        _knightSafeVersionMap[controlCenterAddress] = 0;
+
+        ControlCenterEventUtils.emitRemovedOfficialControlCenter(this, controlCenterAddress);
     }
 
     /// @inheritdoc IControlCenter

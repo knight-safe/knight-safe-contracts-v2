@@ -18,6 +18,27 @@ interface IControlCenter is IEventEmitter {
     function setAdmin(address admin, bool isAdmin) external;
 
     /**
+     * @notice Check control center is official or not supported
+     * @param controlCenterAddress Address of the  contract
+     * @return bool True if the control center is official
+     */
+    function isOfficialControlCenter(address controlCenterAddress) external view returns (bool);
+
+    /**
+     * @notice Add a new official control center contract
+     * @dev only Owner can call
+     * @dev version  format: [AppName]_[MajorVer.].[MinorVer.]: e.g. CC_1.1
+     * @param controlCenterAddress Address of the control center contract
+     * @param version Version of the control center contract , format:( [Name]_[MajorVer.].[MinorVer.]: e.g. CC_1.1 )
+     */
+    function addOfficialControlCenter(address controlCenterAddress, bytes32 version) external;
+    /**
+     * @notice remove unsupported control center contract
+     * @dev only Owner can call
+     * @param controlCenterAddress Address of the control center contract
+     */
+    function removeOfficialControlCenter(address controlCenterAddress) external;
+    /**
      * @notice Check implementation is official or not supported
      * @param implementationAddress Address of the implementation contract
      * @return bool True if the implementation is official
@@ -28,7 +49,7 @@ interface IControlCenter is IEventEmitter {
      * @dev only Owner can call
      * @dev version  format: [AppName]_[MajorVer.].[MinorVer.]: e.g. ERC20_1.1
      * @param implementationAddress Address of the implementation contract
-     * @param version Version of the analyser contract , format:( [Name]_[MajorVer.].[MinorVer.]: e.g. master_1.1 )
+     * @param version Version of the implementation contract , format:( [Name]_[MajorVer.].[MinorVer.]: e.g. master_1.1 )
      */
     function addOfficialImplementation(address implementationAddress, bytes32 version) external;
     /**
