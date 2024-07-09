@@ -26,10 +26,12 @@ contract AaveUtilsAnalyser is BaseKnightSafeAnalyser {
         if (
             selector == 0xeed88b8d // emergencyEtherTransfer(to:address,amount:uint256)
         ) {
-            addrList = new address[](1);
+            addrList = new address[](2);
             valueList = new uint256[](addrList.length);
             addrList[0] = _getAddressFromBytes(data, 0); // to
-            valueList[0] = _getUintFromBytes(data, 1); // amount
+            addrList[1] = nativeToken;
+            valueList[0] = 0;
+            valueList[1] = _getUintFromBytes(data, 1); // amount
             return (addrList, valueList);
         } else if (
             selector == 0xf2fde38b // transferOwnership(newOwner:address)
@@ -58,7 +60,7 @@ contract AaveUtilsAnalyser is BaseKnightSafeAnalyser {
             addrList = new address[](2);
             valueList = new uint256[](addrList.length);
             addrList[0] = nativeToken; // ETH
-            addrList[1] = _getAddressFromBytes(data, 0); // onBehalfOf
+            addrList[1] = _getAddressFromBytes(data, 1); // onBehalfOf
             valueList[0] = 0; // handled msg.value outside
             valueList[1] = 0;
             return (addrList, valueList);

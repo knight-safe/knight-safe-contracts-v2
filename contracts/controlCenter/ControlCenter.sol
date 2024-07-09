@@ -207,6 +207,8 @@ contract ControlCenter is IControlCenter, EventEmitter {
 
     /// @inheritdoc IControlCenter
     function setPriceFeed(address priceFeed) public onlyOwner {
+        isKnightSafe[_priceFeed] = false;
+
         _priceFeed = priceFeed;
         isKnightSafe[priceFeed] = true;
 

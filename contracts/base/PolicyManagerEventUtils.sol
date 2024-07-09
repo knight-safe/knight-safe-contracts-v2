@@ -40,7 +40,6 @@ library PolicyManagerEventUtils {
     {
         EventUtils.EventLogData memory eventData;
         eventData.uintItems.initItems(1);
-        eventData.uintItems.initItems(1);
         eventData.uintItems.setItem(0, "policyId", _policyId);
         eventData.addressItems.initItems(1);
         eventData.addressItems.setItem(0, "trader", _trader);
@@ -94,5 +93,27 @@ library PolicyManagerEventUtils {
         eventData.addressItems.setItem(0, "whitelistAddress", _whitelistAddress);
 
         eventEmitter.emitEventLog1("RemovedWhitelist", Cast._toBytes32(profile), eventData);
+    }
+
+    function emitUpdatedSpendingLimit(
+        EventEmitter eventEmitter,
+        address profile,
+        uint256 _policyId,
+        uint256 spendingLimit
+    ) external {
+        EventUtils.EventLogData memory eventData;
+        eventData.uintItems.initItems(2);
+        eventData.uintItems.setItem(0, "policyId", _policyId);
+        eventData.uintItems.setItem(1, "spendingLimit", spendingLimit);
+
+        eventEmitter.emitEventLog1("UpdatedSpendingLimit", Cast._toBytes32(profile), eventData);
+    }
+
+    function emitResetSpendingLimit(EventEmitter eventEmitter, address profile, uint256 _policyId) external {
+        EventUtils.EventLogData memory eventData;
+        eventData.uintItems.initItems(1);
+        eventData.uintItems.setItem(0, "policyId", _policyId);
+
+        eventEmitter.emitEventLog1("ResetSpendingLimit", Cast._toBytes32(profile), eventData);
     }
 }

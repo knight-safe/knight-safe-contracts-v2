@@ -178,6 +178,8 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
         if (!_controlCenter.isSpendingLimitEnabled(address(this))) revert Errors.FeatureNotSupport("RETAIL");
 
         _policyMap[policyId].maxSpendingLimit = maxSpendingLimit;
+
+        PolicyManagerEventUtils.emitUpdatedSpendingLimit(_controlCenter, address(this), policyId, maxSpendingLimit);
     }
 
     /// @inheritdoc IPolicyManager
@@ -189,10 +191,14 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
         }
 
         _policyMap[policyId].maxSpendingLimit = maxSpendingLimit;
+
+        PolicyManagerEventUtils.emitUpdatedSpendingLimit(_controlCenter, address(this), policyId, maxSpendingLimit);
     }
 
     /// @inheritdoc IPolicyManager
     function resetDailySpent(uint256 policyId) public onlyOwner {
         _policyMap[policyId].dailyVolumeSpent = 0;
+
+        PolicyManagerEventUtils.emitResetSpendingLimit(_controlCenter, address(this), policyId);
     }
 }

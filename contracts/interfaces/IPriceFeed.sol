@@ -20,10 +20,11 @@ interface IPriceFeed {
      * @param token token address
      * @param priceFeed price feed address
      */
-    function setPriceFeed(address token, address priceFeed) external;
+    function setPriceFeed(address token, address priceFeed, uint256 heartbeatTime) external;
     /**
      * @notice batch set price feed address for token
      * @dev Price Feed must return as USD price
      */
-    function batchSetPriceFeed(address[] memory tokens, address[] memory priceFeeds) external;
+    function batchSetPriceFeed(address[] memory tokens, address[] memory priceFeeds, uint256[] memory heartbeatTimes)
+        external;
 }

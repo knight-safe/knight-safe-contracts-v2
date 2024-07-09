@@ -145,6 +145,7 @@ abstract contract OwnerManager is IOwnerManager, Context, ControlCenterManager {
 
     function _takeover() private {
         _owner = _backupOwner;
+        _backupOwner = address(0);
         _isTakeoverInProgress = false;
     }
 }

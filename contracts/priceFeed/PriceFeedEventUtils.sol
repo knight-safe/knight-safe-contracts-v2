@@ -25,8 +25,9 @@ library PriceFeedEventUtils {
 
     function emitSetPriceFeed(address eventEmitter, address[] memory token, address[] memory priceFeed) external {
         EventUtils.EventLogData memory eventData;
-        eventData.uintItems.initItems(token.length);
-        eventData.uintItems.setItem(0, "length", 1);
+        eventData.uintItems.initItems(1);
+        eventData.uintItems.setItem(0, "length", token.length);
+
         eventData.addressItems.initItems(token.length + priceFeed.length);
         for (uint256 i = 0; i < token.length; i++) {
             eventData.addressItems.setItem(i, "token", token[i]);

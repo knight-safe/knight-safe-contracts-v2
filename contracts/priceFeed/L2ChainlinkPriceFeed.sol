@@ -15,36 +15,49 @@ contract ChainlinkPriceFeed is Context, IPriceFeed {
      * @dev The answer is too old.
      */
     error PriceTooOld();
+    /**
+     * @dev The sequencer is down.
+     */
+    error SequencerDown();
+    /**
+     * @dev The grace period is not over.
+     */
+    error GracePeriodNotOver();
 
     address internal _owner;
     address private _controlCenter;
 
+    address private _sequencerUptimeFeed;
     mapping(address => address) private _priceFeedMap;
     mapping(address => uint256) private _heartbeatMap;
     address private _wrappedNativeTokenAddress;
 
     uint8 private constant _BASE_DECIMALS = 30;
     uint8 private constant _NATIVE_DECIMALS = 18;
-    uint256 private constant HEARTBEAT_TIME = 86400;
+    uint256 private constant HEARTBEAT_TIME = 3600;
+    uint256 private constant GRACE_PERIOD_TIME = 3600;
 
     constructor(
         address owner,
         address controlCenter,
         address wrappedNativeTokenAddress,
         address nativeTokenPriceFeed,
+        address sequencerUptimeFeed,
         uint256 heartbeatTime
     ) {
         if (
             owner == address(0) || controlCenter == address(0) || wrappedNativeTokenAddress == address(0)
-                || nativeTokenPriceFeed == address(0) || heartbeatTime == 0
+                || nativeTokenPriceFeed == address(0) || heartbeatTime == 0 || sequencerUptimeFeed == address(0)
         ) {
             revert Errors.IsNullValue();
         }
+
         _owner = owner;
         _controlCenter = controlCenter;
         _wrappedNativeTokenAddress = wrappedNativeTokenAddress;
         _priceFeedMap[wrappedNativeTokenAddress] = nativeTokenPriceFeed;
         _heartbeatMap[nativeTokenPriceFeed] = heartbeatTime;
+        _sequencerUptimeFeed = sequencerUptimeFeed;
     }
 
     modifier onlyOwner() {
@@ -147,11 +160,36 @@ contract ChainlinkPriceFeed is Context, IPriceFeed {
             return (0, 0);
         }
 
+        (
+            /*uint80 roundID*/
+            ,
+            int256 SeqAnswer,
+            uint256 startedAt,
+            /*uint256 updatedAt*/
+            ,
+            /*uint80 answeredInRound*/
+        ) = AggregatorV2V3Interface(_sequencerUptimeFeed).latestRoundData();
+
+        // Answer == 0: Sequencer is up
+        // Answer == 1: Sequencer is down
+        bool isSequencerUp = SeqAnswer == 0;
+        if (!isSequencerUp) {
+            revert SequencerDown();
+        }
+
+        // Make sure the grace period has passed after the
+        // sequencer is back up.
+        uint256 timeSinceUp = block.timestamp - startedAt;
+        if (timeSinceUp <= GRACE_PERIOD_TIME) {
+            revert GracePeriodNotOver();
+        }
+
         (, int256 answer,, uint256 updatedAt,) = AggregatorV2V3Interface(priceFeed).latestRoundData();
         if (answer == 0) {
             revert Errors.IsNullValue();
         }
-        uint256 timeSinceUp = block.timestamp - updatedAt;
+
+        uint256 timeSince = block.timestamp - updatedAt;
         if (timeSinceUp >= _heartbeatMap[priceFeed]) {
             revert PriceTooOld();
         }

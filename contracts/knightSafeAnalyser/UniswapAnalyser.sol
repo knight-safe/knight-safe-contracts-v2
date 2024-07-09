@@ -8,21 +8,24 @@ contract UniswapAnalyser is BaseKnightSafeAnalyser {
     error FeeTooHigh();
 
     event MaxFeeBipsUpdated(uint256 feeBips);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     address public immutable nativeToken;
-    address public immutable gov;
+    address public immutable owner;
     uint256 public maxFeeBips;
 
-    constructor(address nativeToken_) {
-        gov = msg.sender; // todo: use param
+    constructor(address nativeToken_, address owner_) {
+        owner = owner_;
         nativeToken = nativeToken_;
         maxFeeBips = 15;
     }
 
-    function updateMaxFeeBips(uint256 newMaxFeeBips) public {
-        if (gov == msg.sender) {
-            revert Unauthorized("GOV");
-        }
+    modifier onlyOwner() {
+        if (owner != msg.sender) revert Unauthorized("OWNER");
+        _;
+    }
+
+    function updateMaxFeeBips(uint256 newMaxFeeBips) public onlyOwner {
         maxFeeBips = newMaxFeeBips;
         emit MaxFeeBipsUpdated(maxFeeBips);
     }
@@ -429,10 +432,10 @@ contract UniswapAnalyser is BaseKnightSafeAnalyser {
 
             uint256 x = 0;
             for (uint256 i = 0; i < batchDetails.length; i++) {
-                addrList[x++] = batchDetails[i].to;
-                valueList[x] = 0;
-                addrList[x++] = batchDetails[i].token;
-                valueList[x] = batchDetails[i].amount;
+                addrList[x] = batchDetails[i].to;
+                valueList[x++] = 0;
+                addrList[x] = batchDetails[i].token;
+                valueList[x++] = batchDetails[i].amount;
             }
             return (addrList, valueList, bips);
         }

@@ -7,23 +7,24 @@ import {IKnightSafeAnalyser} from "../interfaces/IKnightSafeAnalyser.sol";
 
 contract GMXAnalyser is BaseKnightSafeAnalyser {
     event FeeReceiverUpdated(address indexed from, address indexed to);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-    address public owner;
     address public feeReceiver;
+    address public immutable owner;
     address public immutable NATIVE_TOKEN;
     address public immutable DATA_STORE;
 
     bytes32 public constant CLAIMABLE_FUNDING_AMOUNT = keccak256(abi.encode("CLAIMABLE_FUNDING_AMOUNT"));
 
-    constructor(address nativeToken_, address datastore) {
-        owner = msg.sender;
+    constructor(address nativeToken_, address datastore, address owner_) {
+        owner = owner_;
         feeReceiver = address(0);
         NATIVE_TOKEN = nativeToken_;
         DATA_STORE = datastore;
     }
 
     modifier onlyOwner() {
-        if (owner != msg.sender) revert Unauthorized("Owner");
+        if (owner != msg.sender) revert Unauthorized("OWNER");
         _;
     }
 
@@ -61,6 +62,7 @@ contract GMXAnalyser is BaseKnightSafeAnalyser {
                 valueList = new uint256[](1);
                 valueList[0] = 0;
             }
+            return (addrList, valueList);
         } else if (selector == Selectors.CLAIM_FUNDING_FEES) {
             address[] calldata markets = _getAddressArray(data, 0);
             address[] calldata tokens = _getAddressArray(data, 1);
@@ -74,6 +76,7 @@ contract GMXAnalyser is BaseKnightSafeAnalyser {
 
             addrList[tokens.length] = _getAddressFromBytes(data, 2); // receiver
             valueList[tokens.length] = 0;
+            return (addrList, valueList);
         }
 
         revert UnsupportedCommand();
@@ -118,7 +121,7 @@ contract GMXAnalyser is BaseKnightSafeAnalyser {
         view
         returns (address[] memory rv, uint256[] memory rint)
     {
-        if (selector == Selectors.SEND_WNT) {
+        if (selector == Selectors.SEND_WNT || selector == Selectors.SEND_NATIVE_TOKEN) {
             // sendWnt(receiver:address, amount:uint256)
             rv = new address[](2);
             rv[0] = _getAddressFromBytes(data, 0);
@@ -176,17 +179,36 @@ contract GMXAnalyser is BaseKnightSafeAnalyser {
             return (rv, rint);
         } else if (selector == Selectors.CREATE_ORDER) {
             // createOrder(param:tuple)
+            rv = new address[](6);
+            rv[0] = _getAddressFromBytes(data, 15); // receiver
+            rv[1] = _getAddressFromBytes(data, 16); // callbackContract
+            rv[2] = _getAddressFromBytes(data, 17); // cancellationReceiver
+            address uiFeeReceiver = _getAddressFromBytes(data, 18); // uiFeeReceiver
+            if (uiFeeReceiver == feeReceiver) {
+                rv[3] = address(0);
+            } else {
+                rv[3] = uiFeeReceiver;
+            }
+            rv[4] = _getAddressFromBytes(data, 19); // marketToken
+            rv[5] = _getAddressFromBytes(data, 20); // initialCollateralToken
+            rint = new uint256[](rv.length);
+            for (uint256 i = 0; i < rint.length; i++) {
+                rint[i] = 0;
+            }
+            return (rv, rint);
+        } else if (selector == Selectors.CREATE_SHIFT) {
+            // createShift(param:tuple)
             rv = new address[](5);
-            rv[0] = _getAddressFromBytes(data, 14); // receiver
-            rv[1] = _getAddressFromBytes(data, 15); // callbackContract
-            address uiFeeReceiver = _getAddressFromBytes(data, 16); // uiFeeReceiver
+            rv[0] = _getAddressFromBytes(data, 1); // receiver
+            rv[1] = _getAddressFromBytes(data, 2); // callbackContract
+            address uiFeeReceiver = _getAddressFromBytes(data, 3); // uiFeeReceiver
             if (uiFeeReceiver == feeReceiver) {
                 rv[2] = address(0);
             } else {
                 rv[2] = uiFeeReceiver;
             }
-            rv[3] = _getAddressFromBytes(data, 17); // marketToken
-            rv[4] = _getAddressFromBytes(data, 18); // initialCollateralToken
+            rv[3] = _getAddressFromBytes(data, 4); // fromMarket
+            rv[4] = _getAddressFromBytes(data, 5); // toMarket
             rint = new uint256[](rv.length);
             for (uint256 i = 0; i < rint.length; i++) {
                 rint[i] = 0;
@@ -195,6 +217,7 @@ contract GMXAnalyser is BaseKnightSafeAnalyser {
         } else if (
             selector == Selectors.CANCEL_DEPOSIT || selector == Selectors.CANCEL_WITHDRAWAL
                 || selector == Selectors.CANCEL_ORDER || selector == Selectors.UPDATE_ORDER
+                || selector == Selectors.CANCEL_SHIFT
         ) {
             rv = new address[](1);
             rint = new uint256[](rv.length);
@@ -232,6 +255,8 @@ library Selectors {
 
     //  sendWnt(receiver:address, amount:uint256)
     bytes4 internal constant SEND_WNT = 0x7d39aaf1;
+    // sendNativeToken(receiver:address, amount:uint256)
+    bytes4 internal constant SEND_NATIVE_TOKEN = 0x53ead2d3;
     // sendTokens(token:address, receiver:address, amount:uint256)
     bytes4 internal constant SEND_TOKENS = 0xe6d66ac8;
     // createDeposit(param:tuple) << 0
@@ -239,7 +264,7 @@ library Selectors {
     // createWithdrawal(param:tuple)
     bytes4 internal constant CREATE_WITHDRAWAL = 0xad23c5a1;
     // createOrder(param:tuple)
-    bytes4 internal constant CREATE_ORDER = 0x4a393a41;
+    bytes4 internal constant CREATE_ORDER = 0x083cfcee;
     // cancelDeposit(bytes32 key)
     bytes4 internal constant CANCEL_DEPOSIT = 0x31404484;
     //  cancelWithdrawal(bytes32 key)
@@ -247,43 +272,9 @@ library Selectors {
     // cancelOrder(bytes32 key)
     bytes4 internal constant CANCEL_ORDER = 0x7213c5a0;
     // updateOrder(bytes32 key, uint256 sizeDeltaUsd, uint256 acceptablePrice, uint256 triggerPrice, uint256 minOutputAmount)
-    bytes4 internal constant UPDATE_ORDER = 0xaab286f8;
-
-    /// GMX V1
-    // decreasePositionAndSwap(_path:address[],_indexToken:address,_collateralDelta:uint256,_sizeDelta:uint256,_isLong:bool,
-    // _receiver:address,_price:uint256,_minOut:uint256)
-    bytes4 internal constant DECREASE_POSITION_AND_SWAP = 0x5fc8500e;
-    // increasePosition(_path:address[],_indexToken:address,_amountIn:uint256,_minOut:uint256,_sizeDelta:uint256,_isLong:bool,_price:uint256)
-    bytes4 internal constant INCREASE_POSITION = 0xb7ddc992;
-    // swap(_path:address[],_amountIn:uint256,_minOut:uint256,_receiver:address)
-    bytes4 internal constant SWAP = 0x6023e966;
-    // createIncreasePosition(_path:address[],_indexToken:address,_amountIn:uint256,_minOut:uint256,_sizeDelta:uint256,
-    // _isLong:bool,_acceptablePrice:uint256,_executionFee:uint256,_referralCode:bytes32,_callbackTarget:address)
-    bytes4 internal constant CREATE_INCREASE_POSITION = 0xf2ae372f;
-
-    // decreasePositionAndSwapETH(_path:address[],_indexToken:address,_collateralDelta:uint256,_sizeDelta:uint256,
-    // _isLong:bool,_receiver:address,_price:uint256,_minOut:uint256)
-    bytes4 internal constant DECREASE_POSITION_AND_SWAP_ETH = 0x3039e37f;
-    // swapTokensToETH(_path:address[],_amountIn:uint256,_minOut:uint256,_receiver:address)
-    bytes4 internal constant SWAP_TOKENS_TO_ETH = 0x2d4ba6a7;
-
-    // increasePositionETH(_path:address[],_indexToken:address,_minOut:uint256,_sizeDelta:uint256,_isLong:bool,_price:uint256)
-    bytes4 internal constant INCREASE_POSITION_ETH = 0xb32755de;
-    // swapETHToTokens(_path:address[],_minOut:uint256,_receiver:address)
-    bytes4 internal constant SWAP_ETH_TO_TOKENS = 0xabe68eaa;
-    // createIncreasePositionETH(_path:address[],_indexToken:address,_minOut:uint256,_sizeDelta:uint256,_isLong:bool,_acceptablePrice:uint256,
-    // _executionFee:uint256,_referralCode:bytes32,_callbackTarget:address)
-    bytes4 internal constant CREATE_INCREASE_POSITION_ETH = 0x5b88e8c6;
-
-    // createDecreasePosition(_path:address[],_indexToken:address,_collateralDelta:uint256,_sizeDelta:uint256,_isLong:bool,_receiver:address,
-    // _acceptablePrice:uint256,_minOut:uint256,_executionFee:uint256,_withdrawETH:bool,_callbackTarget:address)
-    bytes4 internal constant CREATE_DECREASE_POSITION = 0x7be7d141;
-
-    // createIncreaseOrder(_path:address[],_amountIn:uint256,_indexToken:address,_minOut:uint256,_sizeDelta:uint256,_collateralToken:address,_isLong:bool,
-    // _triggerPrice:uint256,_triggerAboveThreshold:bool,_executionFee:uint256,_shouldWrap:bool)
-    bytes4 internal constant CREATE_INCREASE_ORDER = 0xb142a4b0;
-
-    // createSwapOrder(_path:address[],_amountIn:uint256,_minOut:uint256,_triggerRatio:uint256,_triggerAboveThreshold:bool,
-    // _executionFee:uint256,_shouldWrap:bool,_shouldUnwrap:bool)
-    bytes4 internal constant CREATE_SWAP_ORDER = 0x269ae6c2;
+    bytes4 internal constant UPDATE_ORDER = 0xf82a2272;
+    // createShift(param:tuple)
+    bytes4 internal constant CREATE_SHIFT = 0xb1f906b9;
+    // cancelShift(key:bytes32)
+    bytes4 internal constant CANCEL_SHIFT = 0x96be2898;
 }

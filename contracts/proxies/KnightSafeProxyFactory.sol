@@ -31,7 +31,7 @@ contract KnightSafeProxyFactory {
         address contractAddress = address(this);
         bytes32 creationCodeHash =
             keccak256(abi.encodePacked(type(KnightSafeProxy).creationCode, uint256(uint160(address(implementation)))));
-        bytes32 salt = keccak256(abi.encodePacked(saltNonce));
+        bytes32 salt = keccak256(abi.encodePacked(saltNonce, msg.sender));
         /* solhint-disable no-inline-assembly */
         assembly {
             let ptr := mload(0x40)
@@ -59,7 +59,7 @@ contract KnightSafeProxyFactory {
         if (!CONTROL_CENTER.isOfficialImplementation(implementation)) {
             revert Errors.AddressIsNotKnightSafeImplementation(implementation);
         }
-        bytes32 salt = keccak256(abi.encodePacked(saltNonce));
+        bytes32 salt = keccak256(abi.encodePacked(saltNonce, msg.sender));
         proxy = _deployProxy(implementation, data, salt);
 
         ProxyFactoryEventUtils.emitProxyCreation(CONTROL_CENTER, implementation, address(proxy), msg.sender, saltNonce);

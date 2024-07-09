@@ -12,6 +12,16 @@ import "../error/Errors.sol";
 abstract contract SignatureValidator is IERC1271, PolicyManager {
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    /**
+     * @dev The signature derives the `address(0)`.
+     */
+    error ECDSAInvalidSignature();
+
+    /**
+     * @dev The signature has an S value that is in the upper half order.
+     */
+    error ECDSAInvalidSignatureS(bytes32 s);
+
     function isValidSignature(bytes32 _hash, bytes memory _signature) external view override returns (bytes4) {
         address signer = _recoverSigner(_hash, _signature);
 
@@ -57,14 +67,17 @@ abstract contract SignatureValidator is IERC1271, PolicyManager {
             v := and(mload(add(_signature, 0x41)), 0xff)
         }
 
+        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+            revert ECDSAInvalidSignatureS(s);
+        }
+
         // Recover ECDSA signer
         signer = ecrecover(_hash, v, r, s);
 
         // // Prevent signer from being 0x0
-        // require(
-        //     signer != address(0x0),
-        //     "INVALID_SIGNER"
-        // );
+        if (signer == address(0)) {
+            revert ECDSAInvalidSignature();
+        }
 
         return signer;
     }
