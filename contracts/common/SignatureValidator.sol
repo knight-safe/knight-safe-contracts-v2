@@ -71,6 +71,10 @@ abstract contract SignatureValidator is IERC1271, PolicyManager {
             revert ECDSAInvalidSignatureS(s);
         }
 
+        if (v != 27 && v != 28) {
+            revert ECDSAInvalidSignature();
+        }
+
         // Recover ECDSA signer
         signer = ecrecover(_hash, v, r, s);
 

@@ -148,7 +148,7 @@ contract ChainlinkPriceFeed is Context, IPriceFeed {
         }
 
         (, int256 answer,, uint256 updatedAt,) = AggregatorV2V3Interface(priceFeed).latestRoundData();
-        if (answer == 0) {
+        if (answer <= 0) {
             revert Errors.IsNullValue();
         }
         uint256 timeSinceUp = block.timestamp - updatedAt;

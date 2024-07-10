@@ -17,7 +17,7 @@ contract UniswapAnalyser is BaseKnightSafeAnalyser {
     constructor(address nativeToken_, address owner_) {
         owner = owner_;
         nativeToken = nativeToken_;
-        maxFeeBips = 15;
+        maxFeeBips = 25;
     }
 
     modifier onlyOwner() {

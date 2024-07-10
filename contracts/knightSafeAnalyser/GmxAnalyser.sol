@@ -181,8 +181,8 @@ contract GMXAnalyser is BaseKnightSafeAnalyser {
             // createOrder(param:tuple)
             rv = new address[](6);
             rv[0] = _getAddressFromBytes(data, 15); // receiver
-            rv[1] = _getAddressFromBytes(data, 16); // callbackContract
-            rv[2] = _getAddressFromBytes(data, 17); // cancellationReceiver
+            rv[1] = _getAddressFromBytes(data, 16); // cancellationReceiver
+            rv[2] = _getAddressFromBytes(data, 17); // callbackContract
             address uiFeeReceiver = _getAddressFromBytes(data, 18); // uiFeeReceiver
             if (uiFeeReceiver == feeReceiver) {
                 rv[3] = address(0);
