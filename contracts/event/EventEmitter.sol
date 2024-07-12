@@ -2,37 +2,23 @@
 
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/utils/Context.sol";
-import "../error/Errors.sol";
-import "../interfaces/IEventEmitter.sol";
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
+import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {Errors} from "../error/Errors.sol";
+import {IEventEmitter, EventUtils} from "../interfaces/IEventEmitter.sol";
 
 /// @notice inherit Doc {IEventEmitter}
-abstract contract EventEmitter is IEventEmitter, Context {
-    address internal immutable _owner;
+abstract contract EventEmitter is IEventEmitter, Context, Ownable2Step {
     mapping(address => bool) private _factory;
     mapping(address => bool) internal isKnightSafe;
 
-    constructor(address owner) {
-        if (owner == address(0)) {
-            revert Errors.IsNullValue();
-        }
-        _owner = owner;
-    }
-
-    modifier onlyOwner() {
-        if (!_checkOwner()) revert Errors.Unauthorized(_msgSender(), "OWNER");
-        _;
-    }
+    constructor(address owner) Ownable(owner) {}
 
     modifier onlyKnightSafe() {
         if (!isActiveAccount(_msgSender()) && !isFactory(_msgSender()) && _msgSender() != address(this)) {
             revert Errors.Unauthorized(_msgSender(), "KNIGHTSAFE");
         }
         _;
-    }
-
-    function _checkOwner() internal view returns (bool) {
-        return _owner == _msgSender();
     }
 
     /// @inheritdoc IEventEmitter
@@ -97,5 +83,12 @@ abstract contract EventEmitter is IEventEmitter, Context {
 
     function emitSettingEventLog(string memory eventName, bytes32 profile, uint256 reqId) external onlyKnightSafe {
         emit SettingEventLog((address(_msgSender())), eventName, eventName, profile, reqId);
+    }
+
+    /**
+     * @dev Disable owner renounce ownership
+     */
+    function renounceOwnership() public virtual override onlyOwner {
+        // do nothing
     }
 }

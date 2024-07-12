@@ -2,27 +2,20 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {BaseKnightSafeAnalyser} from "./BaseKnightSafeAnalyser.sol";
+import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "../interfaces/IKnightSafeAnalyser.sol";
 
-contract UniswapAnalyser is BaseKnightSafeAnalyser {
+contract UniswapAnalyser is BaseKnightSafeAnalyser, Ownable2Step {
     error FeeTooHigh();
 
     event MaxFeeBipsUpdated(uint256 feeBips);
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     address public immutable nativeToken;
-    address public immutable owner;
     uint256 public maxFeeBips;
 
-    constructor(address nativeToken_, address owner_) {
-        owner = owner_;
+    constructor(address nativeToken_, address owner_) Ownable(owner_) {
         nativeToken = nativeToken_;
         maxFeeBips = 25;
-    }
-
-    modifier onlyOwner() {
-        if (owner != msg.sender) revert Unauthorized("OWNER");
-        _;
     }
 
     function updateMaxFeeBips(uint256 newMaxFeeBips) public onlyOwner {
@@ -477,6 +470,13 @@ contract UniswapAnalyser is BaseKnightSafeAnalyser {
         } else {
             return recipient;
         }
+    }
+
+    /**
+     * @dev Disable owner renounce ownership
+     */
+    function renounceOwnership() public virtual override onlyOwner {
+        // do nothing
     }
 
     struct PermitDetails {

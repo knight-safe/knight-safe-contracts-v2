@@ -2,30 +2,23 @@
 
 pragma solidity ^0.8.20;
 
+import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {BaseKnightSafeAnalyser} from "./BaseKnightSafeAnalyser.sol";
 import {IKnightSafeAnalyser} from "../interfaces/IKnightSafeAnalyser.sol";
 
-contract GMXAnalyser is BaseKnightSafeAnalyser {
+contract GMXAnalyser is BaseKnightSafeAnalyser, Ownable2Step {
     event FeeReceiverUpdated(address indexed from, address indexed to);
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     address public feeReceiver;
-    address public immutable owner;
     address public immutable NATIVE_TOKEN;
     address public immutable DATA_STORE;
 
     bytes32 public constant CLAIMABLE_FUNDING_AMOUNT = keccak256(abi.encode("CLAIMABLE_FUNDING_AMOUNT"));
 
-    constructor(address nativeToken_, address datastore, address owner_) {
-        owner = owner_;
+    constructor(address nativeToken_, address datastore, address owner_) Ownable(owner_) {
         feeReceiver = address(0);
         NATIVE_TOKEN = nativeToken_;
         DATA_STORE = datastore;
-    }
-
-    modifier onlyOwner() {
-        if (owner != msg.sender) revert Unauthorized("OWNER");
-        _;
     }
 
     function updateFeeReceiver(address feeReceiver_) public onlyOwner {
@@ -239,6 +232,13 @@ contract GMXAnalyser is BaseKnightSafeAnalyser {
     function _getClaimableAmount(address market, address token, address account) private view returns (uint256) {
         bytes32 key = keccak256(abi.encode(CLAIMABLE_FUNDING_AMOUNT, market, token, account));
         return IDataStore(DATA_STORE).getUint(key);
+    }
+
+    /**
+     * @dev Disable owner renounce ownership
+     */
+    function renounceOwnership() public virtual override onlyOwner {
+        // do nothing
     }
 }
 

@@ -53,7 +53,7 @@ contract ControlCenter is IControlCenter, EventEmitter {
     }
 
     modifier onlyAdmin() {
-        if (!_checkOwner() && !_checkAdmin()) revert Errors.Unauthorized(_msgSender(), "ADMIN");
+        if (owner() != _msgSender() && !_checkAdmin()) revert Errors.Unauthorized(_msgSender(), "ADMIN");
         _;
     }
 
