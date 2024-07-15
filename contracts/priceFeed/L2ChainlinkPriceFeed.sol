@@ -163,7 +163,7 @@ contract ChainlinkPriceFeed is Context, IPriceFeed {
         (
             /*uint80 roundID*/
             ,
-            int256 SeqAnswer,
+            int256 seqAnswer,
             uint256 startedAt,
             /*uint256 updatedAt*/
             ,
@@ -172,7 +172,7 @@ contract ChainlinkPriceFeed is Context, IPriceFeed {
 
         // Answer == 0: Sequencer is up
         // Answer == 1: Sequencer is down
-        bool isSequencerUp = SeqAnswer == 0;
+        bool isSequencerUp = seqAnswer == 0;
         if (!isSequencerUp) {
             revert SequencerDown();
         }
@@ -189,7 +189,7 @@ contract ChainlinkPriceFeed is Context, IPriceFeed {
             revert Errors.IsNullValue();
         }
         uint256 timeSince = block.timestamp - updatedAt;
-        if (timeSinceUp >= _heartbeatMap[priceFeed]) {
+        if (timeSince >= _heartbeatMap[priceFeed]) {
             revert PriceTooOld();
         }
         decimals = AggregatorV2V3Interface(priceFeed).decimals();
