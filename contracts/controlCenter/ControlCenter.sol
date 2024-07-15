@@ -76,7 +76,7 @@ contract ControlCenter is IControlCenter, EventEmitter {
     function addOfficialControlCenter(address controlCenterAddress, bytes32 version) public onlyOwner {
         if (isOfficialControlCenter(controlCenterAddress)) revert Errors.AddressAlreadyExist(controlCenterAddress);
         if (version == 0) revert Errors.IsNullValue();
-        _knightSafeVersionMap[controlCenterAddress] = version;
+        _controlCenterVersionMap[controlCenterAddress] = version;
 
         ControlCenterEventUtils.emitAddedOfficialControlCenter(this, controlCenterAddress, version);
     }
@@ -84,7 +84,7 @@ contract ControlCenter is IControlCenter, EventEmitter {
     /// @inheritdoc IControlCenter
     function removeOfficialControlCenter(address controlCenterAddress) public onlyOwner {
         if (!isOfficialControlCenter(controlCenterAddress)) revert Errors.AddressNotExist(controlCenterAddress);
-        _knightSafeVersionMap[controlCenterAddress] = 0;
+        _controlCenterVersionMap[controlCenterAddress] = 0;
 
         ControlCenterEventUtils.emitRemovedOfficialControlCenter(this, controlCenterAddress);
     }
