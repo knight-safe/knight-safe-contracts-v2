@@ -173,6 +173,23 @@ abstract contract PolicyManager is IPolicyManager, OwnerManager {
     }
 
     /// @inheritdoc IPolicyManager
+    function getPolicyUpdateDate(uint256 policyId) public view returns (uint256) {
+        return _policyMap[policyId].lastDailyVolumeDate;
+    }
+
+    /// @inheritdoc IPolicyManager
+    function getAllPolicyLimit() public view returns (uint256[] memory, uint256[] memory, uint256[] memory) {
+        uint256[] memory policyIds = _activePolicyIds.values();
+        uint256[] memory limits = new uint256[](policyIds.length);
+        uint256[] memory dates = new uint256[](policyIds.length);
+        for (uint256 i = 0; i < policyIds.length; i++) {
+            limits[i] = _policyMap[policyIds[i]].maxSpendingLimit;
+            dates[i] = _policyMap[policyIds[i]].lastDailyVolumeDate;
+        }
+        return (policyIds, limits, dates);
+    }
+
+    /// @inheritdoc IPolicyManager
     function setMaxSpendingLimit(uint256 policyId, uint256 maxSpendingLimit) public onlyOwner {
         if (!_activePolicyIds.contains(policyId)) revert Errors.PolicyNotExist(policyId);
         if (!_controlCenter.isSpendingLimitEnabled(address(this))) revert Errors.FeatureNotSupport("RETAIL");

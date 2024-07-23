@@ -139,6 +139,13 @@ interface IControlCenter is IEventEmitter {
     function setPriceFeed(address priceFeed) external;
 
     /**
+     * @notice set global volume limit
+     * @dev only Owner can call
+     * @param volume global limit with 30 decimals
+     */
+    function setBaseVolume(uint256 volume) external;
+
+    /**
      * @notice get daily transaction volume limit
      * @param knightSafeAddress  knight safe account
      * @return Limit transaction volume limit as 30 decimals

@@ -109,6 +109,14 @@ library ControlCenterEventUtils {
         eventEmitter.emitEventLog("SetPriceFeed", eventData);
     }
 
+    function emitSetBaseLimit(EventEmitter eventEmitter, uint256 volume) external {
+        EventUtils.EventLogData memory eventData;
+        eventData.uintItems.initItems(1);
+        eventData.uintItems.setItem(0, "baseLimit", volume);
+
+        eventEmitter.emitEventLog1("SetBaseLimit", Cast._toBytes32(msg.sender), eventData);
+    }
+
     function emitSetDailyLimit(EventEmitter eventEmitter, address knightSafeAddress, uint256 volume) external {
         EventUtils.EventLogData memory eventData;
         eventData.addressItems.initItems(1);

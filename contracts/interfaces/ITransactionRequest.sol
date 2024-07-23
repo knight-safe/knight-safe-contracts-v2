@@ -49,10 +49,9 @@ interface ITransactionRequest {
      * @notice validate policy limit for transaction
      * @dev validate on user in subscribed feature
      * @param policyId policy id
-     * @param useGlobalWhitelist use global whitelist or policy whitelist
      * @param volume transaction volume in USD
      */
-    function validatePolicyLimit(uint256 policyId, bool useGlobalWhitelist, uint256 volume) external;
+    function validatePolicyLimit(uint256 policyId, uint256 volume) external;
 
     /**
      * @notice request transaction

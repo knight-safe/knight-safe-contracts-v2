@@ -77,6 +77,10 @@ interface IPolicyManager is ITransactionRequest {
     function getMaxSpendingLimit(uint256 policyId) external view returns (uint256);
     /// @notice get daily volume spent in USD with 30 decimals
     function getDailyVolumeSpent(uint256 policyId) external view returns (uint256);
+    /// @notice get daily volume update at
+    function getPolicyUpdateDate(uint256 policyId) external view returns (uint256);
+    /// @notice get all policy group limit setting
+    function getAllPolicyLimit() external view returns (uint256[] memory, uint256[] memory, uint256[] memory);
     /**
      * @notice increase or reduce spending limit
      * @dev only owner can call

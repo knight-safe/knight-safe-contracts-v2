@@ -25,7 +25,9 @@ contract ControlCenter is IControlCenter, EventEmitter {
     mapping(address => bool) private _adminMap;
 
     address private _priceFeed;
-    uint256 private constant _BASE_TRADING_VOLUME = 100_000 * (10 ** 30); // 100,000 USD for Retail plan
+    uint256 public baseTradingVolume = 100_000 * (10 ** 30); // 100,000 USD for Retail plan
+    uint256 public _minPolicyAllowed = 3;
+
     mapping(address => AccountLimit) private _tradingLimitMap;
 
     mapping(address => bytes32) private _controlCenterVersionMap;
@@ -43,8 +45,6 @@ contract ControlCenter is IControlCenter, EventEmitter {
         SettingSelectors.INCREASE_SPENDING_LIMIT,
         SettingSelectors.RESET_SPENDING_LIMIT
     ];
-
-    uint256 private _minPolicyAllowed = 3;
 
     constructor(address owner) EventEmitter(owner) {
         _adminMap[owner] = true;
@@ -221,12 +221,20 @@ contract ControlCenter is IControlCenter, EventEmitter {
     }
 
     /// @inheritdoc IControlCenter
+    function setBaseVolume(uint256 volume) public onlyOwner {
+        if (volume == 0) revert Errors.IsNullValue();
+        baseTradingVolume = volume;
+
+        ControlCenterEventUtils.emitSetBaseLimit(this, volume);
+    }
+
+    /// @inheritdoc IControlCenter
     function getDailyVolume(address knightSafeAddress) public view returns (uint256) {
         if (
             _tradingLimitMap[knightSafeAddress].dailyLimitExpiryDate < block.timestamp
-                || _tradingLimitMap[knightSafeAddress].dailyLimit < _BASE_TRADING_VOLUME
+                || _tradingLimitMap[knightSafeAddress].dailyLimit < baseTradingVolume
         ) {
-            return _BASE_TRADING_VOLUME;
+            return baseTradingVolume;
         }
         return _tradingLimitMap[knightSafeAddress].dailyLimit;
     }

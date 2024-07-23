@@ -105,20 +105,19 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
     }
 
     /// @inheritdoc ITransactionRequest
-    function validatePolicyLimit(uint256 policyId, bool useGlobalWhitelist, uint256 volume) public {
+    function validatePolicyLimit(uint256 policyId, uint256 volume) public {
         // feature disable for unsubscribed user
         if (!_controlCenter.isSpendingLimitEnabled(address(this))) return;
 
         uint256 currentTime = block.timestamp;
-        uint256 ksaPolicyId = useGlobalWhitelist ? 0 : policyId;
 
-        if (currentTime - _policyMap[ksaPolicyId].lastDailyVolumeDate > 1 days) {
-            _policyMap[ksaPolicyId].dailyVolumeSpent = 0;
-            _policyMap[ksaPolicyId].lastDailyVolumeDate = currentTime - (currentTime % 1 days); // new day starts at 00:00:00
+        if (currentTime - _policyMap[policyId].lastDailyVolumeDate > 1 days) {
+            _policyMap[policyId].dailyVolumeSpent = 0;
+            _policyMap[policyId].lastDailyVolumeDate = currentTime - (currentTime % 1 days); // new day starts at 00:00:00
         }
 
-        if (volume + _policyMap[ksaPolicyId].dailyVolumeSpent > _policyMap[ksaPolicyId].maxSpendingLimit) {
-            revert Errors.ExceedPolicyVolume(ksaPolicyId, volume);
+        if (volume + _policyMap[policyId].dailyVolumeSpent > _policyMap[policyId].maxSpendingLimit) {
+            revert Errors.ExceedPolicyVolume(policyId, volume);
         }
     }
 
@@ -213,9 +212,9 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
             validateTradingAccess(onBehalfOfPolicyId, useGlobalWhitelist, to, data);
 
         uint256 amount = validateTradingLimit(addresses, amounts, value);
-        validatePolicyLimit(onBehalfOfPolicyId, useGlobalWhitelist, amount);
+        validatePolicyLimit(onBehalfOfPolicyId, amount);
 
-        _updateVolumeSpent(onBehalfOfPolicyId, useGlobalWhitelist, amount);
+        _updateVolumeSpent(onBehalfOfPolicyId, amount);
 
         bytes memory returnData;
         (success, returnData) = to.call{value: value}(data);
@@ -223,7 +222,7 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
         if (!success) revert Errors.ExecutionFailedWith(returnData);
     }
 
-    function _updateVolumeSpent(uint256 policyId, bool useGlobalWhitelist, uint256 amount) private {
+    function _updateVolumeSpent(uint256 policyId, uint256 amount) private {
         uint256 maxVolume = _controlCenter.getDailyVolume(address(this));
 
         uint256 remainingDailyVolume = maxVolume - dailyVolumeSpent;
@@ -238,7 +237,6 @@ abstract contract TransactionRequest is ControlCenterManager, PolicyManager, Pau
         }
         // feature disable for unsubscribed user
         if (!_controlCenter.isSpendingLimitEnabled(address(this))) return;
-        uint256 ksaPolicyId = useGlobalWhitelist ? 0 : policyId;
-        _policyMap[ksaPolicyId].dailyVolumeSpent += amount;
+        _policyMap[policyId].dailyVolumeSpent += amount;
     }
 }
